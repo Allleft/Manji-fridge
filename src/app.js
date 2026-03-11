@@ -11,10 +11,6 @@ const state = {
   hiddenIngredientIds: new Set(initialPreferences.hiddenIngredientIds),
   selectedVegetables: new Set(),
   selectedMeats: new Set(),
-  collapsedSections: {
-    vegetable: false,
-    meat: false,
-  },
   presetRecipeIds: new Set(loadPresetRecipeIds()),
   activeRecipeId: null,
   modal: {
@@ -184,15 +180,6 @@ function clearSelections() {
   render({ preserveScroll: true });
 }
 
-function toggleSectionCollapse(category) {
-  if (category !== 'vegetable' && category !== 'meat') {
-    return;
-  }
-
-  state.collapsedSections[category] = !state.collapsedSections[category];
-  render({ preserveScroll: true });
-}
-
 function openModal(category) {
   state.modal = {
     isOpen: true,
@@ -336,10 +323,9 @@ function renderIngredientSection(category) {
   const selectedSet = category === 'vegetable' ? state.selectedVegetables : state.selectedMeats;
   const hiddenDefaultCount = getHiddenDefaultCount(category);
   const emptyHint = category === 'vegetable' ? '\u8fd8\u6ca1\u6709\u852c\u83dc\uff0c\u5148\u52a0\u4e00\u4e2a\u5e38\u7528\u98df\u6750\u5427\u3002' : '\u8fd8\u6ca1\u6709\u8089\u7c7b\uff0c\u5148\u8865\u51e0\u4e2a\u5e38\u505a\u4e3b\u83dc\u7684\u98df\u6750\u5427\u3002';
-  const isCollapsed = Boolean(state.collapsedSections[category]);
 
   return `
-    <section class="ingredient-section ingredient-section--${category} ${isCollapsed ? 'is-collapsed' : ''}">
+    <section class="ingredient-section ingredient-section--${category}">
       <div class="section-head">
         <div>
           <p class="section-kicker">${category === 'vegetable' ? 'Left Door - Upper Shelf' : 'Left Door - Lower Shelf'}</p>
@@ -352,14 +338,6 @@ function renderIngredientSection(category) {
               ? `<button class="ghost-button" data-action="restore-defaults" data-category="${category}">\u6062\u590d\u9ed8\u8ba4 ${hiddenDefaultCount}</button>`
               : ''
           }
-          <button
-            class="ghost-button section-toggle-button"
-            data-action="toggle-section"
-            data-category="${category}"
-            aria-expanded="${isCollapsed ? 'false' : 'true'}"
-          >
-            ${isCollapsed ? '\u5c55\u5f00' : '\u6298\u53e0'}
-          </button>
         </div>
       </div>
       <div class="ingredient-section__body">
@@ -771,11 +749,6 @@ app.addEventListener('click', (event) => {
 
   if (action === 'restore-defaults') {
     restoreDefaults(target.dataset.category);
-    return;
-  }
-
-  if (action === 'toggle-section') {
-    toggleSectionCollapse(target.dataset.category);
     return;
   }
 

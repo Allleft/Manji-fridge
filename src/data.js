@@ -4263,9 +4263,8 @@ export const RECIPES = [
     "vegetables": [
       "葱"
     ],
-    "meats": [],
+    "meats": ["排骨"],
     "otherIngredients": [
-      "肋排",
       "生粉",
       "清水",
       "白芝麻"
@@ -4764,7 +4763,7 @@ export const RECIPES = [
     "vegetables": [
       "土豆"
     ],
-    "meats": [],
+    "meats": ["鸡肉"],
     "otherIngredients": [
       "遵义的子弹头",
       "啤酒",
@@ -6844,7 +6843,7 @@ export const RECIPES = [
     "vegetables": [
       "土豆"
     ],
-    "meats": [],
+    "meats": ["肉片"],
     "otherIngredients": [
       "生粉"
     ],
@@ -7155,9 +7154,9 @@ export const RECIPES = [
     "vegetables": [
       "土豆"
     ],
-    "meats": [],
+    "meats": ["排骨"],
     "otherIngredients": [
-      "肋排"
+      
     ],
     "seasonings": [
       "料酒",
