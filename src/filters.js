@@ -51,8 +51,9 @@ export function getVisibleRecipes({ selectedVegetables, selectedMeats, recipes }
   const meatResults = filterRecipesByMeats(selectedMeats, recipes);
 
   if (selectedVegetables.length === 0 && selectedMeats.length === 0) {
-    return [...recipes];
+    return [];
   }
 
   return mergeRecipeResults(vegetableResults, meatResults);
 }
+

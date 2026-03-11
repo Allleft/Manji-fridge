@@ -11,6 +11,10 @@ const state = {
   hiddenIngredientIds: new Set(initialPreferences.hiddenIngredientIds),
   selectedVegetables: new Set(),
   selectedMeats: new Set(),
+  collapsedSections: {
+    vegetable: false,
+    meat: false,
+  },
   presetRecipeIds: new Set(loadPresetRecipeIds()),
   activeRecipeId: null,
   modal: {
@@ -35,12 +39,83 @@ function escapeHtml(value) {
 }
 
 function normalizeIngredientName(name) {
-  return name.trim().replace(/\s+/g, '').toLocaleLowerCase();
+  return String(name || '').trim().replace(/\s+/g, '').toLocaleLowerCase();
+}
+
+const BLOCKED_INGREDIENT_EXACT_NAMES = [
+  '\u5e72\u8fa3\u6912',
+  '\u8fa3\u6912',
+  '\u59dc',
+  '\u8fa3\u6912\u662f\u9752\u8fa3\u6912',
+  '\u65e5\u672c\u8c46\u8150',
+  '\u5c0f\u8471',
+  '\u5c0f\u7c73\u6912',
+  '\u849c',
+  '\u8471\u59dc\u672b',
+  '\u5e72\u5c0f\u7c73\u6912',
+  '\u8471\u59dc\u849c',
+  '\u8fa3\u6912\u9752\u6912',
+  '\u9999\u83dc\u4e00\u9897',
+  '\u5b50\u5f39\u5934\u8fa3\u6912',
+  '\u4fc4\u5f0f\u9178\u9ec4\u74dc\u6c41',
+  '\u5e72\u8fa3\u6912\u788e',
+  '\u7389\u7c73\u7c92',
+  '\u5241\u6912',
+  '\u841d\u535c\u5e72',
+  '\u8364\u7d20\u642d\u914d',
+  '\u9999\u83dc\u53f6',
+  '\u9e70\u5634\u8c46',
+  '\u62e9\u9ec4\u74dc',
+  '\u841d\u535c\u7b49',
+  '\u5e72\u7ea2\u6912',
+  '\u6d0b\u8471\u4e09\u4ef6\u5957',
+  '\u756a\u8304\u8543\u8304\u818f',
+  '\u756a\u8304\u756a\u8304\u818f',
+  '\u756a\u8304\u7f50\u5934',
+  '\u5c0f\u9999\u8471',
+  '\u8d85\u5e02',
+  '\u756a\u8304\u4e00\u4e2a',
+  '\u53f6\u83dc\u7c7b\u852c\u83dc',
+  '\u83cc\u83c7',
+  '\u9ad8\u6c64\u6b27\u82b9',
+  '\u571f\u8c46\u5e72\u7c89\u6761',
+];
+
+const BLOCKED_VEGETABLE_PARTIAL_PATTERNS = [
+  /\u6912/,
+  /\u59dc/,
+  /\u849c/,
+  /\u8543\u8304\u818f|\u756a\u8304\u818f|\u756a\u8304\u7f50\u5934|\u756a\u8304\u4e00\u4e2a/,
+  /\u6d0b\u8471\u4e09\u4ef6\u5957|\u8364\u7d20\u642d\u914d|\u8d85\u5e02/,
+  /\u62e9\u9ec4\u74dc|\u841d\u535c\u7b49|\u9999\u83dc\u4e00\u9897|\u9999\u83dc\u53f6|\u7389\u7c73\u7c92|\u841d\u535c\u5e72|\u4fc4\u5f0f\u9178\u9ec4\u74dc\u6c41|\u9e70\u5634\u8c46/,
+  /\u53f6\u83dc\u7c7b\u852c\u83dc|\u83cc\u83c7|\u9ad8\u6c64\u6b27\u82b9|\u571f\u8c46\u5e72\u7c89\u6761/,
+];
+
+const BLOCKED_INGREDIENT_EXACT_NORMALIZED = new Set(
+  BLOCKED_INGREDIENT_EXACT_NAMES.map((name) => normalizeIngredientName(name)),
+);
+
+function isBlockedIngredient(ingredient) {
+  if (!ingredient || !ingredient.name) {
+    return false;
+  }
+
+  const normalizedName = normalizeIngredientName(ingredient.name);
+
+  if (BLOCKED_INGREDIENT_EXACT_NORMALIZED.has(normalizedName)) {
+    return true;
+  }
+
+  if (ingredient.category === 'vegetable') {
+    return BLOCKED_VEGETABLE_PARTIAL_PATTERNS.some((pattern) => pattern.test(ingredient.name));
+  }
+
+  return false;
 }
 
 function getVisibleIngredients() {
   return [...DEFAULT_INGREDIENTS, ...state.customIngredients].filter(
-    (ingredient) => !state.hiddenIngredientIds.has(ingredient.id) && !ingredient.isHidden,
+    (ingredient) => !isBlockedIngredient(ingredient) && !state.hiddenIngredientIds.has(ingredient.id) && !ingredient.isHidden,
   );
 }
 
@@ -109,6 +184,15 @@ function clearSelections() {
   render({ preserveScroll: true });
 }
 
+function toggleSectionCollapse(category) {
+  if (category !== 'vegetable' && category !== 'meat') {
+    return;
+  }
+
+  state.collapsedSections[category] = !state.collapsedSections[category];
+  render({ preserveScroll: true });
+}
+
 function openModal(category) {
   state.modal = {
     isOpen: true,
@@ -146,13 +230,19 @@ function addIngredient(form) {
   };
 
   if (!name) {
-    state.modal.error = '食材名称不能为空。';
+    state.modal.error = '\u98df\u6750\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a\u3002';
+    render();
+    return;
+  }
+
+  if (isBlockedIngredient({ name, category })) {
+    state.modal.error = '\u8be5\u98df\u6750\u5df2\u88ab\u5c4f\u853d\uff0c\u8bf7\u6362\u4e00\u4e2a\u540d\u79f0\u3002';
     render();
     return;
   }
 
   if (ingredientExists(name, category)) {
-    state.modal.error = '同一分类下已存在同名食材，请换一个名称。';
+    state.modal.error = '\u540c\u4e00\u5206\u7c7b\u4e0b\u5df2\u5b58\u5728\u540c\u540d\u98df\u6750\uff0c\u8bf7\u6362\u4e00\u4e2a\u540d\u79f0\u3002';
     render();
     return;
   }
@@ -245,71 +335,82 @@ function renderIngredientSection(category) {
   const ingredients = getIngredientsByCategory(category);
   const selectedSet = category === 'vegetable' ? state.selectedVegetables : state.selectedMeats;
   const hiddenDefaultCount = getHiddenDefaultCount(category);
-  const emptyHint = category === 'vegetable' ? '还没有蔬菜，先加一个常用食材吧。' : '还没有肉类，先补几个常做主菜的食材吧。';
+  const emptyHint = category === 'vegetable' ? '\u8fd8\u6ca1\u6709\u852c\u83dc\uff0c\u5148\u52a0\u4e00\u4e2a\u5e38\u7528\u98df\u6750\u5427\u3002' : '\u8fd8\u6ca1\u6709\u8089\u7c7b\uff0c\u5148\u8865\u51e0\u4e2a\u5e38\u505a\u4e3b\u83dc\u7684\u98df\u6750\u5427\u3002';
+  const isCollapsed = Boolean(state.collapsedSections[category]);
 
   return `
-    <section class="ingredient-section ingredient-section--${category}">
+    <section class="ingredient-section ingredient-section--${category} ${isCollapsed ? 'is-collapsed' : ''}">
       <div class="section-head">
         <div>
           <p class="section-kicker">${category === 'vegetable' ? 'Upper Shelf' : 'Lower Shelf'}</p>
           <h2>${CATEGORY_LABELS[category]}</h2>
         </div>
         <div class="section-actions">
-          <button class="ghost-button" data-action="open-modal" data-category="${category}">添加</button>
+          <button class="ghost-button" data-action="open-modal" data-category="${category}">\u6dfb\u52a0</button>
           ${
             hiddenDefaultCount > 0
-              ? `<button class="ghost-button" data-action="restore-defaults" data-category="${category}">恢复默认 ${hiddenDefaultCount}</button>`
+              ? `<button class="ghost-button" data-action="restore-defaults" data-category="${category}">\u6062\u590d\u9ed8\u8ba4 ${hiddenDefaultCount}</button>`
               : ''
           }
+          <button
+            class="ghost-button section-toggle-button"
+            data-action="toggle-section"
+            data-category="${category}"
+            aria-expanded="${isCollapsed ? 'false' : 'true'}"
+          >
+            ${isCollapsed ? '\u5c55\u5f00' : '\u6298\u53e0'}
+          </button>
         </div>
       </div>
-      <p class="section-rule">
-        ${
-          category === 'vegetable'
-            ? '规则：菜谱中的蔬菜必须全部属于已选集合，且不能包含肉类。'
-            : '规则：只要菜谱包含已选肉类，就直接出现。'
-        }
-      </p>
-      <div class="ingredient-grid">
-        ${
-          ingredients.length
-            ? ingredients
-                .map((ingredient) => {
-                  const isSelected = selectedSet.has(ingredient.name);
-                  const safeName = escapeHtml(ingredient.name);
-                  const safeNote = escapeHtml(ingredient.note || (ingredient.isDefault ? '默认食材' : '自定义食材'));
-                  const safeIcon = escapeHtml(ingredient.icon || ingredient.name.slice(0, 1));
+      <div class="ingredient-section__body">
+        <p class="section-rule">
+          ${
+            category === 'vegetable'
+              ? '\u89c4\u5219\uff1a\u83dc\u8c31\u4e2d\u7684\u852c\u83dc\u5fc5\u987b\u5168\u90e8\u5c5e\u4e8e\u5df2\u9009\u96c6\u5408\uff0c\u4e14\u4e0d\u80fd\u5305\u542b\u8089\u7c7b\u3002'
+              : '\u89c4\u5219\uff1a\u53ea\u8981\u83dc\u8c31\u5305\u542b\u5df2\u9009\u8089\u7c7b\uff0c\u5c31\u76f4\u63a5\u51fa\u73b0\u3002'
+          }
+        </p>
+        <div class="ingredient-grid">
+          ${
+            ingredients.length
+              ? ingredients
+                  .map((ingredient) => {
+                    const isSelected = selectedSet.has(ingredient.name);
+                    const safeName = escapeHtml(ingredient.name);
+                    const safeNote = escapeHtml(ingredient.note || (ingredient.isDefault ? '\u9ed8\u8ba4\u98df\u6750' : '\u81ea\u5b9a\u4e49\u98df\u6750'));
+                    const safeIcon = escapeHtml(ingredient.icon || ingredient.name.slice(0, 1));
 
-                  return `
-                    <article class="ingredient-card ${isSelected ? 'is-selected' : ''}">
-                      <button
-                        class="ingredient-card__main"
-                        data-action="toggle-ingredient"
-                        data-category="${category}"
-                        data-name="${safeName}"
-                        aria-pressed="${isSelected ? 'true' : 'false'}"
-                      >
-                        <span class="ingredient-badge">${safeIcon}</span>
-                        <span class="ingredient-copy">
-                          <strong>${safeName}</strong>
-                          <small>${safeNote}</small>
-                        </span>
-                      </button>
-                      ${isSelected ? '<span class="ingredient-selected-tag">已选</span>' : ''}
-                      <button
-                        class="delete-button"
-                        data-action="delete-ingredient"
-                        data-id="${ingredient.id}"
-                        aria-label="删除 ${safeName}"
-                      >
-                        ×
-                      </button>
-                    </article>
-                  `;
-                })
-                .join('')
-            : `<p class="empty-state empty-state--compact">${emptyHint}</p>`
-        }
+                    return `
+                      <article class="ingredient-card ${isSelected ? 'is-selected' : ''}">
+                        <button
+                          class="ingredient-card__main"
+                          data-action="toggle-ingredient"
+                          data-category="${category}"
+                          data-name="${safeName}"
+                          aria-pressed="${isSelected ? 'true' : 'false'}"
+                        >
+                          <span class="ingredient-badge">${safeIcon}</span>
+                          <span class="ingredient-copy">
+                            <strong>${safeName}</strong>
+                            <small>${safeNote}</small>
+                          </span>
+                        </button>
+                        ${isSelected ? '<span class="ingredient-selected-tag">\u5df2\u9009</span>' : ''}
+                        <button
+                          class="delete-button"
+                          data-action="delete-ingredient"
+                          data-id="${ingredient.id}"
+                          aria-label="\u5220\u9664 ${safeName}"
+                        >
+                          \u00d7
+                        </button>
+                      </article>
+                    `;
+                  })
+                  .join('')
+              : `<p class="empty-state empty-state--compact">${emptyHint}</p>`
+          }
+        </div>
       </div>
     </section>
   `;
@@ -488,6 +589,13 @@ function renderPresetBar() {
 function render(options = {}) {
   const preserveScroll = Boolean(options.preserveScroll);
   const previousScrollY = preserveScroll ? window.scrollY : null;
+  const previousIngredientPanelScroll = preserveScroll
+    ? {
+        vegetable:
+          document.querySelector('.ingredient-section--vegetable .ingredient-section__body')?.scrollTop || 0,
+        meat: document.querySelector('.ingredient-section--meat .ingredient-section__body')?.scrollTop || 0,
+      }
+    : null;
   const { visibleRecipes, vegetableMatchIds, meatMatchIds } = getRecipeMatches();
   const activeSelectionCount = state.selectedVegetables.size + state.selectedMeats.size;
 
@@ -541,7 +649,7 @@ function render(options = {}) {
                 ${
                   activeSelectionCount
                     ? '蔬菜筛选仅展示纯蔬菜菜谱，肉类筛选继续按包含即出现。'
-                    : '先看看现有菜谱也可以，随时点左侧食材缩小范围。'
+                    : '请先点击左侧食材，右侧才会出现对应菜谱。'
                 }
               </p>
             </div>
@@ -560,7 +668,9 @@ function render(options = {}) {
                       }),
                     )
                     .join('')
-                : '<div class="empty-panel"><h3>暂时没有匹配结果</h3><p>试试减少蔬菜选择，或者添加一种肉类来放宽结果集。</p></div>'
+                : activeSelectionCount
+                  ? '<div class="empty-panel"><h3>暂时没有匹配结果</h3><p>试试减少蔬菜选择，或者添加一种肉类来放宽结果集。</p></div>'
+                  : '<div class="empty-panel"><h3>先选择食材</h3><p>点击左侧蔬菜或肉类后，这里会显示可做菜谱。</p></div>'
             }
           </div>
         </section>
@@ -574,6 +684,19 @@ function render(options = {}) {
 
   if (preserveScroll && previousScrollY !== null) {
     window.scrollTo({ top: previousScrollY, left: 0, behavior: 'auto' });
+  }
+
+  if (preserveScroll && previousIngredientPanelScroll) {
+    const vegetableBody = document.querySelector('.ingredient-section--vegetable .ingredient-section__body');
+    const meatBody = document.querySelector('.ingredient-section--meat .ingredient-section__body');
+
+    if (vegetableBody) {
+      vegetableBody.scrollTop = previousIngredientPanelScroll.vegetable;
+    }
+
+    if (meatBody) {
+      meatBody.scrollTop = previousIngredientPanelScroll.meat;
+    }
   }
 
   if (state.modal.isOpen) {
@@ -617,6 +740,11 @@ app.addEventListener('click', (event) => {
 
   if (action === 'restore-defaults') {
     restoreDefaults(target.dataset.category);
+    return;
+  }
+
+  if (action === 'toggle-section') {
+    toggleSectionCollapse(target.dataset.category);
     return;
   }
 
@@ -670,6 +798,10 @@ document.addEventListener('keydown', (event) => {
 });
 
 render();
+
+
+
+
 
 
 

@@ -231,6 +231,48 @@ h3 {
   background: linear-gradient(180deg, rgba(255, 245, 242, 0.78), rgba(244, 224, 213, 0.66));
 }
 
+.section-toggle-button {
+  min-width: 72px;
+}
+
+.ingredient-section__body {
+  margin-top: 12px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 6px;
+  overscroll-behavior: contain;
+}
+
+.ingredient-section--meat .ingredient-section__body {
+  max-height: 280px;
+}
+
+.ingredient-section.is-collapsed .ingredient-section__body {
+  display: none;
+}
+
+.ingredient-section__body .section-rule {
+  margin-top: 0;
+}
+
+.ingredient-section__body .ingredient-grid {
+  margin-top: 12px;
+}
+
+.ingredient-section__body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ingredient-section__body::-webkit-scrollbar-thumb {
+  background: rgba(110, 90, 62, 0.28);
+  border-radius: 999px;
+}
+
+.ingredient-section__body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+}
+
 .section-head,
 .recipes-head,
 .preset-bar__head,
@@ -688,6 +730,11 @@ h3 {
   .fridge-handle {
     height: 92px;
     top: 82px;
+  }
+
+  .ingredient-section__body {
+    max-height: 220px;
+    padding-right: 4px;
   }
 
   .section-head,

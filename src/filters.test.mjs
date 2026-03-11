@@ -47,8 +47,9 @@ assert.deepEqual(
 
 assert.deepEqual(
   getVisibleRecipes({ selectedVegetables: [], selectedMeats: [], recipes }).map((recipe) => recipe.id),
-  ['r1', 'r2', 'r3', 'r4', 'r5'],
-  '无选择时应展示全部菜谱',
+  [],
+  '无选择时应保持空列表，等待食材选择',
 );
 
 console.log('filters ok');
+
