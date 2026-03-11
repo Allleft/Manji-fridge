@@ -342,7 +342,7 @@ function renderIngredientSection(category) {
     <section class="ingredient-section ingredient-section--${category} ${isCollapsed ? 'is-collapsed' : ''}">
       <div class="section-head">
         <div>
-          <p class="section-kicker">${category === 'vegetable' ? 'Upper Shelf' : 'Lower Shelf'}</p>
+          <p class="section-kicker">${category === 'vegetable' ? 'Left Door - Upper Shelf' : 'Left Door - Lower Shelf'}</p>
           <h2>${CATEGORY_LABELS[category]}</h2>
         </div>
         <div class="section-actions">
@@ -411,6 +411,53 @@ function renderIngredientSection(category) {
               : `<p class="empty-state empty-state--compact">${emptyHint}</p>`
           }
         </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderFridgePreviewDoor(meta = {}) {
+  const activeSelectionCount = meta.activeSelectionCount || 0;
+  const matchedRecipes = Array.isArray(meta.matchedRecipes) ? meta.matchedRecipes : [];
+
+  const summaryText = activeSelectionCount
+    ? `\u5df2\u9009\u62e9 ${activeSelectionCount} \u9879\uff0c\u53f3\u95e8\u663e\u793a ${matchedRecipes.length} \u5f20\u5bf9\u5e94\u83dc\u8c31\u4fbf\u7b7e\u3002`
+    : '\u53f3\u95e8\u521d\u59cb\u4e3a\u7a7a\uff0c\u8bf7\u5148\u4ece\u5de6\u95e8\u9009\u62e9\u98df\u6750\u3002';
+
+  const emptyTitle = activeSelectionCount ? "\u6682\u65e0\u5339\u914d\u83dc\u8c31" : "\u5148\u9009\u62e9\u5de6\u95e8\u98df\u6750";
+  const emptyDesc = activeSelectionCount
+    ? '\u8bd5\u8bd5\u51cf\u5c11\u852c\u83dc\u9009\u9879\uff0c\u6216\u589e\u52a0\u4e00\u79cd\u8089\u7c7b\u6765\u6269\u5c55\u7ed3\u679c\u3002'
+    : '\u53f3\u95e8\u4f1a\u5728\u4f60\u9009\u4e2d\u852c\u83dc\u6216\u8089\u7c7b\u540e\uff0c\u51fa\u73b0\u5bf9\u5e94\u83dc\u8c31\u4fbf\u7b7e\u3002';
+
+  return `
+    <section class="fridge-preview">
+      <div class="fridge-preview__head">
+        <p class="section-kicker">Right Door - Recipe Notes</p>
+        <h2>\u5168\u90e8\u83dc\u8c31\u9884\u89c8</h2>
+        <p class="section-rule">${summaryText}</p>
+      </div>
+      <div class="fridge-preview__list">
+        ${
+          matchedRecipes.length
+            ? matchedRecipes
+                .map((recipe) => {
+                  const isPreset = state.presetRecipeIds.has(recipe.id);
+                  return `
+                    <article class="recipe-note">
+                      <button class="recipe-note__main" data-action="open-recipe" data-id="${recipe.id}">
+                        <strong>${recipe.name}</strong>
+                        <small>${recipe.cookTime} \u5206\u949f</small>
+                        <small>${recipe.difficulty}</small>
+                      </button>
+                      <button class="recipe-note__action" data-action="toggle-preset" data-id="${recipe.id}" aria-label="preset ${recipe.name}">
+                        ${isPreset ? '\u2605' : '\u2606'}
+                      </button>
+                    </article>
+                  `;
+                })
+                .join('')
+            : `<div class="fridge-preview-empty"><h3>${emptyTitle}</h3><p>${emptyDesc}</p></div>`
+        }
       </div>
     </section>
   `;
@@ -579,7 +626,7 @@ function renderPresetBar() {
                   `,
                 )
                 .join('')
-            : '<p class="empty-state">还没有预选菜谱，先从右侧卡片里挑一两道想做的吧。</p>'
+            : '<p class="empty-state">\u8fd8\u6ca1\u6709\u9884\u9009\u83dc\u8c31\uff0c\u5148\u4ece\u51b0\u7bb1\u53f3\u95e8\u91cc\u6311\u4e00\u4e24\u9053\u60f3\u505a\u7684\u5427\u3002</p>'
         }
       </div>
     </section>
@@ -593,20 +640,24 @@ function render(options = {}) {
     ? {
         vegetable:
           document.querySelector('.ingredient-section--vegetable .ingredient-section__body')?.scrollTop || 0,
-        meat: document.querySelector('.ingredient-section--meat .ingredient-section__body')?.scrollTop || 0,
+        meat:
+          document.querySelector('.ingredient-section--meat .ingredient-section__body')?.scrollTop || 0,
       }
     : null;
-  const { visibleRecipes, vegetableMatchIds, meatMatchIds } = getRecipeMatches();
+  const previousPreviewDoorScroll = preserveScroll
+    ? document.querySelector('.fridge-preview__list')?.scrollTop || 0
+    : 0;
+  const { visibleRecipes } = getRecipeMatches();
   const activeSelectionCount = state.selectedVegetables.size + state.selectedMeats.size;
 
   app.innerHTML = `
     <div class="page-shell">
       <header class="hero">
         <div>
-          <p class="hero-kicker">Manji Fridge Recipe Web App</p>
-          <h1>冰箱里有什么，就先点什么</h1>
+          <p class="hero-kicker">Manji Fridge Recipe</p>
+          <h1>满记冰箱</h1>
           <p class="hero-copy">
-            用双开门冰箱式界面管理现有食材，左边勾食材，右边即时看能做什么菜，底部随手收进预选区。
+            \u53cc\u5f00\u95e8\u5e03\u5c40\uff1a\u5de6\u95e8\u4e0a\u5c42\u852c\u83dc\u3001\u4e0b\u5c42\u8089\u7c7b\uff1b\u53f3\u95e8\u662f\u83dc\u8c31\u4fbf\u7b7e\u9884\u89c8\u533a\u3002\u521d\u59cb\u9ed8\u8ba4\u4e3a\u7a7a\uff0c\u9009\u4e2d\u5de6\u95e8\u98df\u6750\u540e\u663e\u793a\u5bf9\u5e94\u83dc\u8c31\u3002
           </p>
         </div>
         <div class="hero-stats">
@@ -616,7 +667,7 @@ function render(options = {}) {
           </article>
           <article>
             <strong>${visibleRecipes.length}</strong>
-            <span>可见菜谱</span>
+            <span>\u5f53\u524d\u547d\u4e2d</span>
           </article>
           <article>
             <strong>${state.presetRecipeIds.size}</strong>
@@ -628,50 +679,25 @@ function render(options = {}) {
       <main class="workspace">
         <section class="fridge-panel">
           <div class="fridge-panel__head">
-            <p class="fridge-panel__hint">点击食材即高亮，取消点击可撤销选择。</p>
-            <button class="ghost-button" data-action="clear-selections">清空已选食材</button>
+            <p class="fridge-panel__hint">\u5de6\u95e8\uff1a\u4e0a\u5c42\u852c\u83dc\uff0c\u4e0b\u5c42\u8089\u7c7b\u3002\u53f3\u95e8\uff1a\u83dc\u8c31\u4fbf\u7b7e\u9884\u89c8\uff08\u521d\u59cb\u4e3a\u7a7a\uff0c\u9009\u98df\u6750\u540e\u663e\u793a\uff09\u3002</p>
+            <button class="ghost-button" data-action="clear-selections">\u6e05\u7a7a\u5df2\u9009\u98df\u6750</button>
           </div>
           <div class="fridge-shell">
             <div class="fridge-shell__glow"></div>
+            <div class="fridge-stickers" aria-hidden="true">
+              <span class="fridge-sticker fridge-sticker--fresh">Fresh</span>
+              <span class="fridge-sticker fridge-sticker--chef">Chef</span>
+              <span class="fridge-sticker fridge-sticker--yum">Yum</span>
+            </div>
             <div class="fridge-handle fridge-handle--left"></div>
             <div class="fridge-handle fridge-handle--right"></div>
-            ${renderIngredientSection('vegetable')}
-            ${renderIngredientSection('meat')}
-          </div>
-        </section>
-
-        <section class="recipes-panel">
-          <div class="recipes-head">
-            <div>
-              <p class="section-kicker">Recipe Board</p>
-              <h2>${activeSelectionCount ? '即时推荐结果' : '全部菜谱浏览'}</h2>
-              <p class="recipes-subtitle">
-                ${
-                  activeSelectionCount
-                    ? '蔬菜筛选仅展示纯蔬菜菜谱，肉类筛选继续按包含即出现。'
-                    : '请先点击左侧食材，右侧才会出现对应菜谱。'
-                }
-              </p>
+            <div class="fridge-door fridge-door--left">
+              ${renderIngredientSection('vegetable')}
+              ${renderIngredientSection('meat')}
             </div>
-            <div class="recipes-summary">
-              <span>${visibleRecipes.length} 道菜</span>
+            <div class="fridge-door fridge-door--right">
+              ${renderFridgePreviewDoor({ activeSelectionCount, matchedRecipes: visibleRecipes })}
             </div>
-          </div>
-          <div class="recipe-grid">
-            ${
-              visibleRecipes.length
-                ? visibleRecipes
-                    .map((recipe) =>
-                      renderRecipeCard(recipe, {
-                        matchesVegetable: vegetableMatchIds.has(recipe.id),
-                        matchesMeat: meatMatchIds.has(recipe.id),
-                      }),
-                    )
-                    .join('')
-                : activeSelectionCount
-                  ? '<div class="empty-panel"><h3>暂时没有匹配结果</h3><p>试试减少蔬菜选择，或者添加一种肉类来放宽结果集。</p></div>'
-                  : '<div class="empty-panel"><h3>先选择食材</h3><p>点击左侧蔬菜或肉类后，这里会显示可做菜谱。</p></div>'
-            }
           </div>
         </section>
       </main>
@@ -689,6 +715,7 @@ function render(options = {}) {
   if (preserveScroll && previousIngredientPanelScroll) {
     const vegetableBody = document.querySelector('.ingredient-section--vegetable .ingredient-section__body');
     const meatBody = document.querySelector('.ingredient-section--meat .ingredient-section__body');
+    const previewList = document.querySelector('.fridge-preview__list');
 
     if (vegetableBody) {
       vegetableBody.scrollTop = previousIngredientPanelScroll.vegetable;
@@ -696,6 +723,10 @@ function render(options = {}) {
 
     if (meatBody) {
       meatBody.scrollTop = previousIngredientPanelScroll.meat;
+    }
+
+    if (previewList) {
+      previewList.scrollTop = previousPreviewDoorScroll;
     }
   }
 

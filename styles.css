@@ -1,23 +1,23 @@
 ﻿:root {
-  --bg: #f4efe6;
-  --bg-strong: #ebdcc0;
-  --panel: rgba(255, 250, 242, 0.9);
-  --line: rgba(90, 68, 42, 0.12);
-  --text: #2f261d;
-  --muted: #6d6154;
-  --accent: #d45c31;
-  --accent-soft: #f4c9b5;
-  --veg: #4f8a4f;
-  --veg-soft: rgba(126, 182, 118, 0.18);
-  --meat: #9f4d37;
-  --meat-soft: rgba(188, 116, 83, 0.18);
-  --shadow: 0 24px 70px rgba(104, 78, 44, 0.16);
-  --radius-xl: 32px;
+  --bg: #eaf6ff;
+  --bg-strong: #d9ecff;
+  --panel: rgba(255, 255, 255, 0.92);
+  --line: rgba(101, 133, 165, 0.22);
+  --text: #2b3650;
+  --muted: #61738f;
+  --accent: #ff799c;
+  --accent-soft: #ffd4df;
+  --veg: #43a56e;
+  --veg-soft: rgba(94, 196, 136, 0.18);
+  --meat: #ff8d66;
+  --meat-soft: rgba(255, 152, 119, 0.2);
+  --shadow: 0 20px 48px rgba(76, 110, 145, 0.18);
+  --radius-xl: 34px;
   --radius-lg: 24px;
   --radius-md: 18px;
   --radius-sm: 12px;
-  --font-sans: "Trebuchet MS", "Segoe UI", sans-serif;
-  --font-serif: "Palatino Linotype", "Book Antiqua", serif;
+  --font-sans: "Segoe UI", "Segoe UI Rounded", "Trebuchet MS", sans-serif;
+  --font-serif: "Georgia", "Times New Roman", serif;
 }
 
 * {
@@ -34,9 +34,9 @@ body {
   font-family: var(--font-sans);
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(255, 213, 179, 0.78), transparent 28%),
-    radial-gradient(circle at top right, rgba(112, 166, 136, 0.18), transparent 30%),
-    linear-gradient(180deg, #fcf7ee 0%, #f3eadc 52%, #ede4d9 100%);
+    radial-gradient(circle at 12% 10%, rgba(255, 199, 219, 0.5), transparent 34%),
+    radial-gradient(circle at 88% 12%, rgba(186, 224, 255, 0.62), transparent 38%),
+    linear-gradient(180deg, #f6fbff 0%, #e7f3ff 52%, #deefff 100%);
 }
 
 button,
@@ -90,10 +90,10 @@ h3 {
   padding: 24px 28px;
   border-radius: var(--radius-xl);
   background:
-    linear-gradient(135deg, rgba(255, 248, 237, 0.96), rgba(235, 245, 240, 0.92)),
-    linear-gradient(120deg, rgba(212, 92, 49, 0.08), transparent 46%);
+    linear-gradient(135deg, rgba(255, 248, 252, 0.96), rgba(237, 248, 255, 0.95)),
+    linear-gradient(120deg, rgba(255, 121, 156, 0.08), transparent 48%);
   box-shadow: var(--shadow);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
 .hero-kicker,
@@ -148,8 +148,8 @@ h3 {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(340px, 470px) minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: 1fr;
+  gap: 0;
   margin-top: 22px;
   align-items: start;
 }
@@ -157,78 +157,365 @@ h3 {
 .fridge-panel,
 .recipes-panel,
 .preset-bar {
-  background: var(--panel);
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 251, 254, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.78);
   box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
 }
 
 .fridge-panel {
   display: grid;
   gap: 18px;
   align-content: start;
+  padding: 12px;
+  border-radius: var(--radius-xl);
 }
 
 .fridge-shell {
+  --door-seam: 44%;
   position: relative;
   overflow: hidden;
-  padding: 26px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.18fr);
+  gap: 12px;
+  align-items: stretch;
+  padding: 66px 18px 18px;
   border-radius: var(--radius-xl);
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.32) 0, rgba(255, 255, 255, 0.32) calc(50% - 1px), rgba(111, 132, 141, 0.14) calc(50% - 1px), rgba(111, 132, 141, 0.14) calc(50% + 1px), rgba(255, 255, 255, 0.22) calc(50% + 1px), rgba(255, 255, 255, 0.22) 100%),
-    linear-gradient(180deg, #f9fbfc 0%, #dde8eb 48%, #d2dfe4 100%);
+    linear-gradient(90deg, rgba(255, 255, 255, 0.86) 0, rgba(255, 255, 255, 0.86) calc(var(--door-seam) - 2px), rgba(126, 174, 204, 0.62) calc(var(--door-seam) - 2px), rgba(126, 174, 204, 0.62) calc(var(--door-seam) + 2px), rgba(255, 255, 255, 0.84) calc(var(--door-seam) + 2px), rgba(255, 255, 255, 0.84) 100%),
+    linear-gradient(180deg, #f8fcff 0%, #e6f3ff 45%, #d5e9fa 100%);
 }
 
 .fridge-shell::before {
   content: "";
   position: absolute;
-  inset: 10px;
+  inset: 8px;
   border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.56);
+  border: 2px solid rgba(255, 255, 255, 0.82);
   pointer-events: none;
+}
+
+.fridge-shell::after {
+  content: "\53cc\5f00\95e8\51b0\7bb1";
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.28rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: #4f6f92;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(163, 194, 223, 0.64);
+  box-shadow: 0 6px 14px rgba(110, 147, 184, 0.22);
 }
 
 .fridge-shell__glow {
   position: absolute;
-  inset: -30% auto auto -12%;
-  width: 58%;
-  height: 80%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.62), transparent 65%);
+  inset: -38% auto auto -18%;
+  width: 62%;
+  height: 88%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.72), transparent 68%);
   pointer-events: none;
+}
+
+.fridge-shell__glow::before,
+.fridge-shell__glow::after {
+  content: "";
+  position: absolute;
+  top: 74px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(140, 180, 211, 0.6);
+}
+
+.fridge-shell__glow::before {
+  left: 74%;
+}
+
+.fridge-shell__glow::after {
+  left: 84%;
 }
 
 .fridge-handle {
   position: absolute;
-  top: 68px;
-  width: 8px;
-  height: 130px;
+  top: 138px;
+  width: 11px;
+  height: 292px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #8ca1a7, #d6e3e7, #8ca1a7);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.42);
+  background: linear-gradient(180deg, #8fb2c7, #f0f8ff, #8fb2c7);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.58), 0 4px 10px rgba(95, 132, 165, 0.2);
+  z-index: 3;
 }
 
 .fridge-handle--left {
-  left: calc(50% - 22px);
+  left: calc(var(--door-seam) - 28px);
 }
 
 .fridge-handle--right {
-  right: calc(50% - 22px);
+  left: calc(var(--door-seam) + 20px);
+}
+
+
+.fridge-stickers {
+  position: absolute;
+  top: 62px;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.fridge-sticker {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 66px;
+  height: 34px;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  box-shadow: 0 8px 14px rgba(92, 127, 160, 0.16);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #3f5f82;
+}
+
+.fridge-sticker--fresh {
+  left: 13%;
+  background: linear-gradient(135deg, #d7fff0, #bff7e8);
+  transform: rotate(-10deg);
+}
+
+.fridge-sticker--chef {
+  left: 41%;
+  background: linear-gradient(135deg, #ffe7f1, #ffd0e2);
+  transform: rotate(-4deg);
+}
+
+.fridge-sticker--yum {
+  right: 14%;
+  background: linear-gradient(135deg, #fff3c6, #ffe3a2);
+  transform: rotate(11deg);
+}
+
+.fridge-door {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  border-radius: 24px;
+  border: 1px solid rgba(150, 187, 216, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.fridge-door--left {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  height: 620px;
+  min-height: 620px;
+  padding: 8px;
+  background: linear-gradient(180deg, rgba(246, 252, 255, 0.9), rgba(232, 245, 255, 0.85));
+}
+
+.fridge-door--left .ingredient-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px;
+}
+
+.fridge-door--left .ingredient-section__body {
+  flex: 1;
+  max-height: none;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.fridge-door--left .ingredient-section__body .ingredient-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+
+.fridge-door--left .section-head h2 {
+  font-size: 1.3rem;
+}
+
+.fridge-door--left .section-rule {
+  margin-top: 0.55rem;
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.fridge-door--left .ingredient-card {
+  padding: 7px;
+  border-radius: 14px;
+}
+
+.fridge-door--left .ingredient-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+}
+
+.fridge-door--left .ingredient-copy strong {
+  font-size: 1rem;
+}
+
+.fridge-door--left .ingredient-section--meat .ingredient-section__body {
+  max-height: none;
+}
+
+.fridge-door--right {
+  min-height: 640px;
+  padding: 8px;
+  background: linear-gradient(180deg, rgba(255, 251, 245, 0.9), rgba(254, 244, 231, 0.85));
+}
+
+.fridge-preview {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.fridge-preview__head h2 {
+  margin: 0.35rem 0 0;
+  font-size: 1.3rem;
+}
+
+.fridge-preview__list {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  gap: 12px;
+  align-content: start;
+  padding-right: 4px;
+}
+
+.fridge-preview__list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.fridge-preview__list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(130, 168, 197, 0.42);
+}
+
+.recipe-note {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(165, 145, 112, 0.25);
+  box-shadow: 0 8px 14px rgba(114, 100, 76, 0.14);
+  background: linear-gradient(170deg, #fff3b9, #ffeaa0);
+}
+
+.recipe-note:nth-child(4n + 2) {
+  background: linear-gradient(170deg, #ffd7df, #ffc4d2);
+}
+
+.recipe-note:nth-child(4n + 3) {
+  background: linear-gradient(170deg, #d7f0ff, #c4e7ff);
+}
+
+.recipe-note:nth-child(4n + 4) {
+  background: linear-gradient(170deg, #def7da, #cef0c8);
+}
+
+.recipe-note__main {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  align-content: space-between;
+  gap: 6px;
+  padding: 4px;
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+}
+
+.recipe-note__main strong {
+  font-size: 0.95rem;
+  line-height: 1.25;
+}
+
+.recipe-note__main small {
+  color: #5a5f66;
+  font-size: 0.78rem;
+}
+
+.recipe-note__action {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.7);
+  color: #63553a;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.fridge-preview-empty {
+  grid-column: 1 / -1;
+  min-height: 220px;
+  border-radius: 16px;
+  border: 1px dashed rgba(119, 138, 164, 0.4);
+  background: rgba(255, 255, 255, 0.58);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 18px;
+}
+
+.fridge-preview-empty h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1.05rem;
+}
+
+.fridge-preview-empty p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
 }
 
 .ingredient-section {
   position: relative;
   z-index: 1;
-  padding: 18px;
-  border-radius: 24px;
+  min-height: 0;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(159, 190, 219, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(6px);
 }
 
 .ingredient-section--vegetable {
-  background: linear-gradient(180deg, rgba(247, 255, 247, 0.78), rgba(228, 241, 222, 0.66));
+  background: linear-gradient(180deg, rgba(242, 255, 248, 0.95), rgba(225, 247, 235, 0.9));
 }
 
 .ingredient-section--meat {
-  margin-top: 16px;
-  background: linear-gradient(180deg, rgba(255, 245, 242, 0.78), rgba(244, 224, 213, 0.66));
+  margin-top: 0;
+  background: linear-gradient(180deg, rgba(255, 245, 241, 0.95), rgba(255, 232, 224, 0.9));
 }
 
 .section-toggle-button {
@@ -256,6 +543,7 @@ h3 {
 }
 
 .ingredient-section__body .ingredient-grid {
+  grid-template-columns: 1fr;
   margin-top: 12px;
 }
 
@@ -307,6 +595,16 @@ h3 {
   line-height: 1.6;
 }
 
+.ingredient-section .section-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.52rem;
+  border-radius: 999px;
+  text-transform: none;
+  letter-spacing: 0.03em;
+  background: rgba(255, 255, 255, 0.72);
+}
+
 .ingredient-grid,
 .recipe-grid,
 .preset-list {
@@ -326,8 +624,9 @@ h3 {
   gap: 10px;
   padding: 8px;
   border-radius: 18px;
-  border: 1px solid rgba(76, 57, 36, 0.08);
-  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(122, 156, 190, 0.2);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 8px 18px rgba(106, 139, 172, 0.1);
   transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
 }
 
@@ -341,9 +640,9 @@ h3 {
 }
 
 .ingredient-card.is-selected {
-  border-color: #d45c31;
-  background: linear-gradient(135deg, rgba(252, 224, 210, 0.96), rgba(255, 246, 238, 0.96));
-  box-shadow: 0 14px 26px rgba(170, 84, 48, 0.24);
+  border-color: #ff799c;
+  background: linear-gradient(135deg, rgba(255, 231, 238, 0.96), rgba(255, 249, 252, 0.96));
+  box-shadow: 0 14px 24px rgba(255, 121, 156, 0.2);
 }
 
 .ingredient-card.is-selected .ingredient-card__main {
@@ -353,8 +652,14 @@ h3 {
 }
 
 .ingredient-card.is-selected .ingredient-badge {
-  background: linear-gradient(135deg, #b44624, #de784f);
-  box-shadow: 0 0 0 3px rgba(180, 70, 36, 0.22);
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #6cc7f1, #87b6ff);
 }
 
 .ingredient-card.is-selected .ingredient-copy strong {
@@ -369,8 +674,8 @@ h3 {
   border-radius: 999px;
   font-size: 0.76rem;
   font-weight: 700;
-  color: #fff6f1;
-  background: #c24923;
+  color: #fff;
+  background: #ff6b92;
 }
 
 .ingredient-card__main,
@@ -435,8 +740,9 @@ h3 {
 
 .fridge-panel__hint {
   margin: 0;
-  color: var(--muted);
+  color: #557296;
   line-height: 1.5;
+  font-weight: 600;
 }
 
 .recipes-panel {
@@ -447,8 +753,8 @@ h3 {
   display: inline-flex;
   padding: 0.7rem 1rem;
   border-radius: 999px;
-  background: rgba(212, 92, 49, 0.1);
-  color: var(--accent);
+  background: rgba(255, 121, 156, 0.14);
+  color: #d44f79;
   font-weight: 700;
 }
 
@@ -490,19 +796,29 @@ h3 {
   min-height: 40px;
   padding: 0.7rem 1rem;
   border-radius: 14px;
-  transition: transform 180ms ease, background 180ms ease;
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
 .recipe-open,
 .ghost-button {
-  background: rgba(72, 52, 29, 0.08);
+  background: rgba(123, 160, 194, 0.16);
   color: var(--text);
 }
 
+.recipe-open:hover,
+.ghost-button:hover {
+  background: rgba(123, 160, 194, 0.24);
+}
+
 .primary-button {
-  background: linear-gradient(135deg, #d45c31, #e48d64);
-  color: #fff7f0;
+  background: linear-gradient(135deg, #ff799c, #ffa8be);
+  color: #fff;
   font-weight: 700;
+  box-shadow: 0 10px 20px rgba(255, 121, 156, 0.22);
+}
+
+.primary-button:hover {
+  transform: translateY(-1px);
 }
 
 .primary-button--full {
@@ -590,7 +906,7 @@ h3 {
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: rgba(35, 27, 19, 0.42);
+  background: rgba(47, 66, 95, 0.32);
   backdrop-filter: blur(6px);
 }
 
@@ -598,8 +914,8 @@ h3 {
 .modal {
   position: fixed;
   z-index: 50;
-  background: #fffaf3;
-  box-shadow: 0 30px 80px rgba(42, 31, 20, 0.32);
+  background: #fffafd;
+  box-shadow: 0 30px 80px rgba(66, 96, 128, 0.34);
 }
 
 .drawer {
@@ -681,9 +997,7 @@ h3 {
 
 @media (min-width: 1121px) {
   .fridge-panel {
-    position: sticky;
-    top: 20px;
-    align-self: start;
+    position: static;
   }
 }
 @media (max-width: 1120px) {
@@ -717,6 +1031,34 @@ h3 {
     padding: 18px;
   }
 
+  .fridge-shell {
+    grid-template-columns: 1fr;
+    padding-top: 52px;
+  }
+
+  .fridge-door--left,
+  .fridge-door--right {
+    min-height: 0;
+  }
+
+  .fridge-door--left {
+    grid-template-rows: auto auto;
+    height: auto;
+    min-height: 0;
+  }
+
+  .fridge-preview {
+    min-height: 320px;
+  }
+
+  .fridge-preview__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fridge-door--left .ingredient-section__body .ingredient-grid {
+    grid-template-columns: 1fr;
+  }
+
   .hero-stats {
     grid-template-columns: 1fr;
   }
@@ -727,9 +1069,9 @@ h3 {
     grid-template-columns: 1fr;
   }
 
-  .fridge-handle {
-    height: 92px;
-    top: 82px;
+  .fridge-handle,
+  .fridge-stickers {
+    display: none;
   }
 
   .ingredient-section__body {
