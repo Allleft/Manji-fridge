@@ -107,6 +107,4 @@ Manji-fridge/
 - AI 自由生成菜谱
 - 图片识别冰箱食材
 
----
 
-如果你愿意，我可以继续补一版 `README` 的「截图 + GIF 交互演示」和「GitHub Pages 部署说明」。
