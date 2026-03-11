@@ -11,6 +11,8 @@ const state = {
   hiddenIngredientIds: new Set(initialPreferences.hiddenIngredientIds),
   selectedVegetables: new Set(),
   selectedMeats: new Set(),
+  ingredientQuery: '',
+  recipeQuery: '',
   presetRecipeIds: new Set(loadPresetRecipeIds()),
   activeRecipeId: null,
   modal: {
@@ -36,6 +38,14 @@ function escapeHtml(value) {
 
 function normalizeIngredientName(name) {
   return String(name || '').trim().replace(/\s+/g, '').toLocaleLowerCase();
+}
+
+function normalizeSearchQuery(value) {
+  return String(value || '').trim().toLocaleLowerCase();
+}
+
+function recipeNameMatchesQuery(recipe, query) {
+  return normalizeSearchQuery(recipe.name).includes(query);
 }
 
 const BLOCKED_INGREDIENT_EXACT_NAMES = [
@@ -87,36 +97,135 @@ const BLOCKED_VEGETABLE_PARTIAL_PATTERNS = [
   /\u53f6\u83dc\u7c7b\u852c\u83dc|\u83cc\u83c7|\u9ad8\u6c64\u6b27\u82b9|\u571f\u8c46\u5e72\u7c89\u6761/,
 ];
 
+const BLOCKED_MEAT_EXACT_NAMES = [
+  '鲣鱼海苔碎',
+  '牛肉高汤',
+  '蟹味菇',
+  '肉片',
+];
+
+const BLOCKED_MEAT_PARTIAL_PATTERNS = [
+  /高汤/,
+  /海苔碎/,
+];
+
+const MEAT_CANONICAL_NAME_PAIRS = [
+  ['草鱼农贸市场', '草鱼'],
+  ['次选梭子蟹', '梭子蟹'],
+  ['牛腩首选坑腩', '牛腩'],
+  ['螃蟹首选河蟹', '河蟹'],
+  ['虾仁个人口味', '虾仁'],
+  ['黑虎虾明虾', '明虾'],
+  ['肥牛火锅肥牛', '肥牛'],
+  ['可用羊肉替代', '羊肉'],
+  ['肉猪肉', '猪肉'],
+  ['无骨肉猪肉', '猪肉'],
+  ['去皮猪肉', '猪肉'],
+  ['用猪里脊肉', '猪里脊'],
+  ['鲜仔鸭肉', '鸭肉'],
+  ['鱼头一个', '鱼头'],
+  ['带皮五花肉', '五花肉'],
+  ['带皮猪五花肉', '五花肉'],
+  ['五花肉薄片', '五花肉'],
+  ['五花肉条', '五花肉'],
+  ['猪五花肉', '五花肉'],
+  ['猪里脊肉', '猪里脊'],
+  ['里脊肉', '猪里脊'],
+  ['大鸡腿', '鸡腿'],
+  ['碎牛肉', '牛肉末'],
+];
+
+const MEAT_CANONICAL_NAME_MAP = new Map(
+  MEAT_CANONICAL_NAME_PAIRS.map(([from, to]) => [normalizeIngredientName(from), to]),
+);
+
 const BLOCKED_INGREDIENT_EXACT_NORMALIZED = new Set(
   BLOCKED_INGREDIENT_EXACT_NAMES.map((name) => normalizeIngredientName(name)),
 );
+
+const BLOCKED_MEAT_EXACT_NORMALIZED = new Set(
+  BLOCKED_MEAT_EXACT_NAMES.map((name) => normalizeIngredientName(name)),
+);
+
+function getCanonicalIngredientName(name, category) {
+  const trimmedName = String(name || '').trim();
+
+  if (!trimmedName) {
+    return '';
+  }
+
+  if (category !== 'meat') {
+    return trimmedName;
+  }
+
+  const normalizedName = normalizeIngredientName(trimmedName);
+  return MEAT_CANONICAL_NAME_MAP.get(normalizedName) || trimmedName;
+}
 
 function isBlockedIngredient(ingredient) {
   if (!ingredient || !ingredient.name) {
     return false;
   }
 
-  const normalizedName = normalizeIngredientName(ingredient.name);
+  const canonicalName = getCanonicalIngredientName(ingredient.name, ingredient.category);
+  const normalizedName = normalizeIngredientName(canonicalName);
 
   if (BLOCKED_INGREDIENT_EXACT_NORMALIZED.has(normalizedName)) {
     return true;
   }
 
   if (ingredient.category === 'vegetable') {
-    return BLOCKED_VEGETABLE_PARTIAL_PATTERNS.some((pattern) => pattern.test(ingredient.name));
+    return BLOCKED_VEGETABLE_PARTIAL_PATTERNS.some((pattern) => pattern.test(canonicalName));
+  }
+
+  if (ingredient.category === 'meat') {
+    if (BLOCKED_MEAT_EXACT_NORMALIZED.has(normalizedName)) {
+      return true;
+    }
+
+    return BLOCKED_MEAT_PARTIAL_PATTERNS.some((pattern) => pattern.test(canonicalName));
   }
 
   return false;
 }
 
 function getVisibleIngredients() {
-  return [...DEFAULT_INGREDIENTS, ...state.customIngredients].filter(
-    (ingredient) => !isBlockedIngredient(ingredient) && !state.hiddenIngredientIds.has(ingredient.id) && !ingredient.isHidden,
-  );
+  const seen = new Set();
+
+  return [...DEFAULT_INGREDIENTS, ...state.customIngredients]
+    .map((ingredient) => ({
+      ...ingredient,
+      name: getCanonicalIngredientName(ingredient.name, ingredient.category),
+    }))
+    .filter((ingredient) => ingredient.name)
+    .filter(
+      (ingredient) => !isBlockedIngredient(ingredient) && !state.hiddenIngredientIds.has(ingredient.id) && !ingredient.isHidden,
+    )
+    .filter((ingredient) => {
+      const dedupeKey = `${ingredient.category}:${normalizeIngredientName(ingredient.name)}`;
+
+      if (seen.has(dedupeKey)) {
+        return false;
+      }
+
+      seen.add(dedupeKey);
+      return true;
+    });
 }
 
 function getIngredientsByCategory(category) {
   return getVisibleIngredients().filter((ingredient) => ingredient.category === category);
+}
+
+function getFilteredIngredientsByCategory(category) {
+  const query = normalizeSearchQuery(state.ingredientQuery);
+  const ingredients = getIngredientsByCategory(category);
+
+  if (!query) {
+    return ingredients;
+  }
+
+  return ingredients.filter((ingredient) => normalizeSearchQuery(ingredient.name).includes(query));
 }
 
 function getHiddenDefaultCount(category) {
@@ -125,12 +234,121 @@ function getHiddenDefaultCount(category) {
   ).length;
 }
 
+function dedupeStringList(values) {
+  const result = [];
+  const seen = new Set();
+
+  for (const value of values || []) {
+    const trimmed = String(value || '').trim();
+
+    if (!trimmed) {
+      continue;
+    }
+
+    const normalized = normalizeIngredientName(trimmed);
+    if (seen.has(normalized)) {
+      continue;
+    }
+
+    seen.add(normalized);
+    result.push(trimmed);
+  }
+
+  return result;
+}
+
+function normalizeRecipeIngredients(values, category) {
+  const normalized = [];
+  const seen = new Set();
+
+  for (const value of values || []) {
+    const canonical = getCanonicalIngredientName(value, category);
+
+    if (!canonical) {
+      continue;
+    }
+
+    const normalizedName = normalizeIngredientName(canonical);
+    if (seen.has(normalizedName)) {
+      continue;
+    }
+
+    if (isBlockedIngredient({ name: canonical, category })) {
+      continue;
+    }
+
+    seen.add(normalizedName);
+    normalized.push(canonical);
+  }
+
+  return normalized;
+}
+
+function mergeRecipesByName(recipes) {
+  const merged = new Map();
+
+  for (const recipe of recipes) {
+    const recipeName = String(recipe?.name || '').trim();
+
+    if (!recipeName) {
+      continue;
+    }
+
+    const key = normalizeIngredientName(recipeName);
+
+    if (!merged.has(key)) {
+      merged.set(key, {
+        ...recipe,
+        vegetables: [...(recipe.vegetables || [])],
+        meats: [...(recipe.meats || [])],
+        otherIngredients: [...(recipe.otherIngredients || [])],
+        seasonings: [...(recipe.seasonings || [])],
+        steps: [...(recipe.steps || [])],
+        tags: [...(recipe.tags || [])],
+      });
+      continue;
+    }
+
+    const current = merged.get(key);
+    current.vegetables = dedupeStringList([...(current.vegetables || []), ...(recipe.vegetables || [])]);
+    current.meats = dedupeStringList([...(current.meats || []), ...(recipe.meats || [])]);
+    current.otherIngredients = dedupeStringList([
+      ...(current.otherIngredients || []),
+      ...(recipe.otherIngredients || []),
+    ]);
+    current.seasonings = dedupeStringList([...(current.seasonings || []), ...(recipe.seasonings || [])]);
+    current.tags = dedupeStringList([...(current.tags || []), ...(recipe.tags || [])]);
+
+    if ((recipe.steps || []).length > (current.steps || []).length) {
+      current.steps = [...(recipe.steps || [])];
+    }
+
+    if (!current.summary && recipe.summary) {
+      current.summary = recipe.summary;
+    }
+  }
+
+  return [...merged.values()].filter((recipe) => (recipe.vegetables || []).length || (recipe.meats || []).length);
+}
+
+const NORMALIZED_RECIPES = mergeRecipesByName(
+  RECIPES.map((recipe) => ({
+    ...recipe,
+    vegetables: normalizeRecipeIngredients(recipe.vegetables, 'vegetable'),
+    meats: normalizeRecipeIngredients(recipe.meats, 'meat'),
+    otherIngredients: dedupeStringList(recipe.otherIngredients || []),
+    seasonings: dedupeStringList(recipe.seasonings || []),
+    steps: dedupeStringList(recipe.steps || []),
+    tags: dedupeStringList(recipe.tags || []),
+  })),
+);
+
 function getRecipeMatches() {
   const selectedVegetables = [...state.selectedVegetables];
   const selectedMeats = [...state.selectedMeats];
-  const vegetableMatches = filterRecipesByVegetables(selectedVegetables, RECIPES);
-  const meatMatches = filterRecipesByMeats(selectedMeats, RECIPES);
-  const visibleRecipes = getVisibleRecipes({ selectedVegetables, selectedMeats, recipes: RECIPES });
+  const vegetableMatches = filterRecipesByVegetables(selectedVegetables, NORMALIZED_RECIPES);
+  const meatMatches = filterRecipesByMeats(selectedMeats, NORMALIZED_RECIPES);
+  const visibleRecipes = getVisibleRecipes({ selectedVegetables, selectedMeats, recipes: NORMALIZED_RECIPES });
 
   return {
     visibleRecipes,
@@ -140,7 +358,7 @@ function getRecipeMatches() {
 }
 
 function getActiveRecipe() {
-  return RECIPES.find((recipe) => recipe.id === state.activeRecipeId) || null;
+  return NORMALIZED_RECIPES.find((recipe) => recipe.id === state.activeRecipeId) || null;
 }
 
 function saveIngredientState() {
@@ -155,11 +373,15 @@ function savePresetState() {
 }
 
 function ingredientExists(name, category) {
-  const normalizedName = normalizeIngredientName(name);
-  return [...DEFAULT_INGREDIENTS, ...state.customIngredients].some(
-    (ingredient) =>
-      ingredient.category === category && normalizeIngredientName(ingredient.name) === normalizedName,
-  );
+  const normalizedName = normalizeIngredientName(getCanonicalIngredientName(name, category));
+  return [...DEFAULT_INGREDIENTS, ...state.customIngredients].some((ingredient) => {
+    if (ingredient.category !== category) {
+      return false;
+    }
+
+    const canonicalName = getCanonicalIngredientName(ingredient.name, ingredient.category);
+    return normalizeIngredientName(canonicalName) === normalizedName;
+  });
 }
 
 function toggleIngredient(category, ingredientName) {
@@ -266,10 +488,12 @@ function deleteIngredient(ingredientId) {
     return;
   }
 
+  const canonicalName = getCanonicalIngredientName(ingredient.name, ingredient.category);
+
   if (ingredient.category === 'vegetable') {
-    state.selectedVegetables.delete(ingredient.name);
+    state.selectedVegetables.delete(canonicalName);
   } else {
-    state.selectedMeats.delete(ingredient.name);
+    state.selectedMeats.delete(canonicalName);
   }
 
   if (ingredient.isDefault) {
@@ -319,9 +543,13 @@ function closeRecipe() {
 }
 
 function renderIngredientSection(category) {
-  const ingredients = getIngredientsByCategory(category);
+  const ingredients = getFilteredIngredientsByCategory(category);
   const selectedSet = category === 'vegetable' ? state.selectedVegetables : state.selectedMeats;
   const hiddenDefaultCount = getHiddenDefaultCount(category);
+  const ingredientQuery = normalizeSearchQuery(state.ingredientQuery);
+  const searchHint = ingredientQuery
+    ? `没有匹配“${escapeHtml(state.ingredientQuery.trim())}”的${CATEGORY_LABELS[category]}。`
+    : '';
   const emptyHint = category === 'vegetable' ? '\u8fd8\u6ca1\u6709\u852c\u83dc\uff0c\u5148\u52a0\u4e00\u4e2a\u5e38\u7528\u98df\u6750\u5427\u3002' : '\u8fd8\u6ca1\u6709\u8089\u7c7b\uff0c\u5148\u8865\u51e0\u4e2a\u5e38\u505a\u4e3b\u83dc\u7684\u98df\u6750\u5427\u3002';
 
   return `
@@ -386,7 +614,7 @@ function renderIngredientSection(category) {
                     `;
                   })
                   .join('')
-              : `<p class="empty-state empty-state--compact">${emptyHint}</p>`
+              : `<p class="empty-state empty-state--compact">${searchHint || emptyHint}</p>`
           }
         </div>
       </div>
@@ -397,15 +625,33 @@ function renderIngredientSection(category) {
 function renderFridgePreviewDoor(meta = {}) {
   const activeSelectionCount = meta.activeSelectionCount || 0;
   const matchedRecipes = Array.isArray(meta.matchedRecipes) ? meta.matchedRecipes : [];
+  const recipeQuery = normalizeSearchQuery(state.recipeQuery);
+  const hasRecipeQuery = Boolean(recipeQuery);
+  const recipePool = activeSelectionCount === 0 && hasRecipeQuery ? NORMALIZED_RECIPES : matchedRecipes;
+  const visibleNotes = hasRecipeQuery
+    ? recipePool.filter((recipe) => recipeNameMatchesQuery(recipe, recipeQuery))
+    : recipePool;
+  const safeRecipeQuery = escapeHtml(state.recipeQuery.trim());
 
-  const summaryText = activeSelectionCount
-    ? `\u5df2\u9009\u62e9 ${activeSelectionCount} \u9879\uff0c\u53f3\u95e8\u663e\u793a ${matchedRecipes.length} \u5f20\u5bf9\u5e94\u83dc\u8c31\u4fbf\u7b7e\u3002`
-    : '\u53f3\u95e8\u521d\u59cb\u4e3a\u7a7a\uff0c\u8bf7\u5148\u4ece\u5de6\u95e8\u9009\u62e9\u98df\u6750\u3002';
+  let summaryText = '\u53f3\u95e8\u521d\u59cb\u4e3a\u7a7a\uff0c\u8bf7\u5148\u4ece\u5de6\u95e8\u9009\u62e9\u98df\u6750\u3002';
+  if (activeSelectionCount > 0 && hasRecipeQuery) {
+    summaryText = `已选 ${activeSelectionCount} 项，菜名搜索“${safeRecipeQuery}”后命中 ${visibleNotes.length} 张便签。`;
+  } else if (activeSelectionCount > 0) {
+    summaryText = `\u5df2\u9009\u62e9 ${activeSelectionCount} \u9879\uff0c\u53f3\u95e8\u663e\u793a ${visibleNotes.length} \u5f20\u5bf9\u5e94\u83dc\u8c31\u4fbf\u7b7e\u3002`;
+  } else if (hasRecipeQuery) {
+    summaryText = `菜名搜索“${safeRecipeQuery}”命中 ${visibleNotes.length} 张便签。`;
+  }
 
-  const emptyTitle = activeSelectionCount ? "\u6682\u65e0\u5339\u914d\u83dc\u8c31" : "\u5148\u9009\u62e9\u5de6\u95e8\u98df\u6750";
-  const emptyDesc = activeSelectionCount
-    ? '\u8bd5\u8bd5\u51cf\u5c11\u852c\u83dc\u9009\u9879\uff0c\u6216\u589e\u52a0\u4e00\u79cd\u8089\u7c7b\u6765\u6269\u5c55\u7ed3\u679c\u3002'
-    : '\u53f3\u95e8\u4f1a\u5728\u4f60\u9009\u4e2d\u852c\u83dc\u6216\u8089\u7c7b\u540e\uff0c\u51fa\u73b0\u5bf9\u5e94\u83dc\u8c31\u4fbf\u7b7e\u3002';
+  const emptyTitle = hasRecipeQuery
+    ? '未找到匹配菜名'
+    : activeSelectionCount
+      ? "\u6682\u65e0\u5339\u914d\u83dc\u8c31"
+      : "\u5148\u9009\u62e9\u5de6\u95e8\u98df\u6750";
+  const emptyDesc = hasRecipeQuery
+    ? '试试更短关键词，例如：牛腩、鸡翅、西兰花。'
+    : activeSelectionCount
+      ? '\u8bd5\u8bd5\u51cf\u5c11\u852c\u83dc\u9009\u9879\uff0c\u6216\u589e\u52a0\u4e00\u79cd\u8089\u7c7b\u6765\u6269\u5c55\u7ed3\u679c\u3002'
+      : '\u53f3\u95e8\u4f1a\u5728\u4f60\u9009\u4e2d\u852c\u83dc\u6216\u8089\u7c7b\u540e\uff0c\u51fa\u73b0\u5bf9\u5e94\u83dc\u8c31\u4fbf\u7b7e\u3002';
 
   return `
     <section class="fridge-preview">
@@ -413,11 +659,21 @@ function renderFridgePreviewDoor(meta = {}) {
         <p class="section-kicker">Right Door - Recipe Notes</p>
         <h2>\u5168\u90e8\u83dc\u8c31\u9884\u89c8</h2>
         <p class="section-rule">${summaryText}</p>
+        <label class="search-field search-field--recipe">
+          <span>搜索菜名</span>
+          <input
+            type="search"
+            value="${escapeHtml(state.recipeQuery)}"
+            placeholder="例如：可乐鸡翅"
+            data-action="search-recipes"
+            autocomplete="off"
+          />
+        </label>
       </div>
       <div class="fridge-preview__list">
         ${
-          matchedRecipes.length
-            ? matchedRecipes
+          visibleNotes.length
+            ? visibleNotes
                 .map((recipe) => {
                   const isPreset = state.presetRecipeIds.has(recipe.id);
                   return `
@@ -440,7 +696,6 @@ function renderFridgePreviewDoor(meta = {}) {
     </section>
   `;
 }
-
 function renderRecipeCard(recipe, matchMeta) {
   const isPreset = state.presetRecipeIds.has(recipe.id);
   const ingredientSummary = [
@@ -568,7 +823,7 @@ function renderModal() {
 }
 
 function renderPresetBar() {
-  const presetRecipes = RECIPES.filter((recipe) => state.presetRecipeIds.has(recipe.id));
+  const presetRecipes = NORMALIZED_RECIPES.filter((recipe) => state.presetRecipeIds.has(recipe.id));
 
   return `
     <section class="preset-bar">
@@ -613,6 +868,8 @@ function renderPresetBar() {
 
 function render(options = {}) {
   const preserveScroll = Boolean(options.preserveScroll);
+  const focusSelector = typeof options.focusSelector === 'string' ? options.focusSelector : '';
+  const cursorPosition = Number.isInteger(options.cursorPosition) ? options.cursorPosition : null;
   const previousScrollY = preserveScroll ? window.scrollY : null;
   const previousIngredientPanelScroll = preserveScroll
     ? {
@@ -658,7 +915,19 @@ function render(options = {}) {
         <section class="fridge-panel">
           <div class="fridge-panel__head">
             <p class="fridge-panel__hint">\u5de6\u95e8\uff1a\u4e0a\u5c42\u852c\u83dc\uff0c\u4e0b\u5c42\u8089\u7c7b\u3002\u53f3\u95e8\uff1a\u83dc\u8c31\u4fbf\u7b7e\u9884\u89c8\uff08\u521d\u59cb\u4e3a\u7a7a\uff0c\u9009\u98df\u6750\u540e\u663e\u793a\uff09\u3002</p>
-            <button class="ghost-button" data-action="clear-selections">\u6e05\u7a7a\u5df2\u9009\u98df\u6750</button>
+            <div class="fridge-panel__controls">
+              <button class="ghost-button" data-action="clear-selections">\u6e05\u7a7a\u5df2\u9009\u98df\u6750</button>
+              <label class="search-field search-field--ingredient">
+                <span>搜索食材</span>
+                <input
+                  type="search"
+                  value="${escapeHtml(state.ingredientQuery)}"
+                  placeholder="例如：牛腩 / 西兰花"
+                  data-action="search-ingredients"
+                  autocomplete="off"
+                />
+              </label>
+            </div>
           </div>
           <div class="fridge-shell">
             <div class="fridge-shell__glow"></div>
@@ -705,6 +974,24 @@ function render(options = {}) {
 
     if (previewList) {
       previewList.scrollTop = previousPreviewDoorScroll;
+    }
+  }
+
+  if (focusSelector) {
+    const focusTarget = document.querySelector(focusSelector);
+
+    if (focusTarget) {
+      focusTarget.focus({ preventScroll: true });
+
+      if (
+        cursorPosition !== null &&
+        typeof focusTarget.setSelectionRange === 'function' &&
+        typeof focusTarget.value === 'string'
+      ) {
+        const maxPosition = focusTarget.value.length;
+        const safePosition = Math.max(0, Math.min(cursorPosition, maxPosition));
+        focusTarget.setSelectionRange(safePosition, safePosition);
+      }
     }
   }
 
@@ -786,6 +1073,93 @@ app.addEventListener('submit', (event) => {
   addIngredient(event.target);
 });
 
+app.addEventListener('input', (event) => {
+  const target = event.target.closest('[data-action]');
+
+  if (!target) {
+    return;
+  }
+
+  const action = target.dataset.action;
+  const isSearchInput = action === 'search-ingredients' || action === 'search-recipes';
+  const isComposing = event.isComposing || target.dataset.isComposing === 'true';
+
+  if (!isSearchInput) {
+    return;
+  }
+
+  if (action === 'search-ingredients') {
+    state.ingredientQuery = target.value || '';
+  } else {
+    state.recipeQuery = target.value || '';
+  }
+
+  if (isComposing) {
+    return;
+  }
+
+  if (action === 'search-ingredients') {
+    render({
+      preserveScroll: true,
+      focusSelector: '[data-action="search-ingredients"]',
+      cursorPosition: target.selectionStart ?? state.ingredientQuery.length,
+    });
+    return;
+  }
+
+  render({
+    preserveScroll: true,
+    focusSelector: '[data-action="search-recipes"]',
+    cursorPosition: target.selectionStart ?? state.recipeQuery.length,
+  });
+});
+
+app.addEventListener('compositionstart', (event) => {
+  const target = event.target.closest('[data-action]');
+
+  if (!target) {
+    return;
+  }
+
+  if (target.dataset.action !== 'search-ingredients' && target.dataset.action !== 'search-recipes') {
+    return;
+  }
+
+  target.dataset.isComposing = 'true';
+});
+
+app.addEventListener('compositionend', (event) => {
+  const target = event.target.closest('[data-action]');
+
+  if (!target) {
+    return;
+  }
+
+  const action = target.dataset.action;
+
+  if (action !== 'search-ingredients' && action !== 'search-recipes') {
+    return;
+  }
+
+  target.dataset.isComposing = 'false';
+
+  if (action === 'search-ingredients') {
+    state.ingredientQuery = target.value || '';
+    render({
+      preserveScroll: true,
+      focusSelector: '[data-action="search-ingredients"]',
+      cursorPosition: state.ingredientQuery.length,
+    });
+    return;
+  }
+
+  state.recipeQuery = target.value || '';
+  render({
+    preserveScroll: true,
+    focusSelector: '[data-action="search-recipes"]',
+    cursorPosition: state.recipeQuery.length,
+  });
+});
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') {
     return;

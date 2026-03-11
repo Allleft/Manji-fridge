@@ -381,6 +381,38 @@ h3 {
   font-size: 1.3rem;
 }
 
+.search-field {
+  display: grid;
+  gap: 6px;
+  min-width: 210px;
+}
+
+.search-field span {
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.search-field input {
+  height: 40px;
+  padding: 0.6rem 0.82rem;
+  border-radius: 12px;
+  border: 1px solid rgba(126, 158, 188, 0.42);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.search-field input:focus {
+  outline: 2px solid rgba(133, 185, 219, 0.55);
+  outline-offset: 1px;
+}
+
+.search-field--recipe {
+  min-width: 0;
+  width: min(320px, 100%);
+  margin-top: 6px;
+}
+
 .fridge-preview__list {
   min-height: 0;
   overflow-y: auto;
@@ -720,6 +752,22 @@ h3 {
   color: #557296;
   line-height: 1.5;
   font-weight: 600;
+}
+
+.fridge-panel__controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.fridge-panel__controls .ghost-button {
+  flex: 0 0 auto;
+}
+
+.search-field--ingredient {
+  width: min(320px, 100%);
 }
 
 .recipes-panel {
@@ -1062,6 +1110,22 @@ h3 {
   .modal-head,
   .fridge-panel__head {
     flex-direction: column;
+  }
+
+  .fridge-panel__controls {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .search-field,
+  .search-field--ingredient,
+  .search-field--recipe {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .fridge-panel__controls .ghost-button {
+    width: 100%;
   }
 
   .drawer {
