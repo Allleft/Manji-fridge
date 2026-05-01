@@ -1,67 +1,35 @@
-﻿# Manji Fridge Recipe Web App
+# Manji Fridge Recipe Web App
 
 冰箱菜谱助手（V1）  
-一个以“先选食材，再看菜谱”为核心的响应式网页应用。
+一个“先选食材，再看菜谱”的响应式网页应用（Vanilla JS + ESM）。
 
-## V1 我做了什么
+## 核心规则（当前实现）
 
-### 1. 完成双开门冰箱主交互
-- 页面主舞台改为双开门冰箱风格。
-- 左门分上下两层：
-  - 上层：蔬菜区
-  - 下层：肉类区
-- 右门：菜谱便签预览区（默认空，选食材后展示对应菜谱）。
-- 食材点击后会高亮，且不会强制把页面滚回顶部。
+- 蔬菜严格筛选：
+  - 菜谱至少包含一个已选蔬菜
+  - 菜谱中的所有蔬菜都必须在已选集合内
+  - 由蔬菜规则命中的菜谱不能包含肉类
+- 肉类包含即出现：
+  - 菜谱只要包含任一已选肉类即可出现
+- 综合结果：
+  - 蔬菜命中与肉类命中做并集
+  - 按 `recipe.id` 去重
+- 空选择：
+  - 未选择任何食材时，结果为空
 
-### 2. 实现核心筛选规则（按 PRD）
-- 蔬菜规则：严格匹配  
-  菜谱至少包含一个已选蔬菜，且菜谱中的蔬菜必须都在已选集合中，并且不含肉类。
-- 肉类规则：包含即出现  
-  只要菜谱包含已选肉类，就纳入结果。
-- 综合规则：并集  
-  蔬菜命中 + 肉类命中的并集。
-- 未选择任何食材时：结果为空（右门显示空态提示）。
+## 本地持久化
 
-### 3. 食材管理能力（本地可维护）
-- 支持新增食材（蔬菜/肉类）。
-- 支持删除食材（默认食材走隐藏标记，自定义食材直接移除）。
-- 删除已选食材会自动取消选中并刷新结果。
-- 支持恢复被隐藏的默认食材。
-- 支持分区折叠/展开，便于移动端使用。
+- 食材偏好：`manji-fridge.ingredients.v1`
+- 预选菜谱：`manji-fridge.presets.v1`
 
-### 4. 菜谱查看与预选
-- 右门用“便签纸小方块”展示命中菜谱。
-- 点击便签可打开菜谱详情抽屉（食材组成、步骤、时长、难度、标签）。
-- 支持加入/移除预选菜谱。
-- 底部预选栏常驻展示已选菜谱。
-
-### 5. 本地存储与状态持久化
-- 食材偏好存储：`manji-fridge.ingredients.v1`
-- 预选菜谱存储：`manji-fridge.presets.v1`
-- 刷新页面后，新增/隐藏食材与预选菜谱可保留。
-
-### 6. 数据清洗与结构化
-- 菜谱与食材数据使用本地 `JSON` 结构（`src/data.js`）。
-- 已加入异常食材屏蔽与去噪逻辑（含精确词与模式匹配），过滤无效项与噪声项。
-
-### 7. 响应式与可用性优化
-- 适配桌面与手机浏览器。
-- 左门食材区可滚轮/滑动查看更多食材。
-- 保留局部滚动位置（食材区/右门预览），减少跳动感。
-
-## 当前数据规模（V1）
-- 默认食材：166
-  - 蔬菜：81
-  - 肉类：85
-- 菜谱：369
-
-> 以上统计来自当前 `src/data.js` 实际数据。
+刷新页面后，新增/隐藏食材与预选菜谱会保留。
 
 ## 技术栈
-- 前端：Vanilla JS（ESM）
-- 样式：CSS（响应式 + 自定义主题）
-- 本地存储：`localStorage`
-- 本地服务：Node.js `http`（`server.js`）
+
+- Vanilla JavaScript（ES Modules）
+- CSS
+- localStorage
+- Node.js 本地静态服务（`server.js`）
 
 ## 本地运行
 
@@ -70,7 +38,7 @@ npm install
 npm start
 ```
 
-启动后访问：
+访问：
 
 ```text
 http://localhost:4173
@@ -82,29 +50,50 @@ http://localhost:4173
 npm test
 ```
 
-当前测试覆盖：筛选规则函数（`src/filters.test.mjs`）。
+当前 `npm test` 覆盖：
+- `src/filters.test.mjs`
+- `src/app/business.test.mjs`
 
-## 目录结构
+## 目录结构（当前）
 
 ```text
 Manji-fridge/
+├─ AGENTS.md
 ├─ index.html
 ├─ styles.css
 ├─ server.js
 ├─ package.json
+├─ task_plan.md
+├─ findings.md
+├─ progress.md
 └─ src/
    ├─ app.js
    ├─ data.js
    ├─ filters.js
    ├─ filters.test.mjs
-   └─ storage.js
+   ├─ storage.js
+   └─ app/
+      ├─ state.js
+      ├─ business.js
+      ├─ business.test.mjs
+      ├─ render.js
+      ├─ actions.js
+      └─ events.js
 ```
 
-## V1 边界（未做）
-- 账号系统 / 云端同步
-- 评论点赞 / 社交
-- 后台管理
-- AI 自由生成菜谱
-- 图片识别冰箱食材
+## 模块职责
 
+- `src/app.js`：入口装配（状态、业务、渲染、行为、事件）
+- `src/app/state.js`：初始状态与持久化桥接
+- `src/app/business.js`：食材归一化、屏蔽、菜谱归并与业务派生
+- `src/app/render.js`：HTML 渲染与滚动/焦点恢复
+- `src/app/actions.js`：用户行为状态变更（含持久化触发）
+- `src/app/events.js`：DOM 事件绑定与路由
+- `src/filters.js`：纯筛选规则函数
+- `src/storage.js`：localStorage 读写封装
 
+## GitHub Pages 兼容说明
+
+- 入口保持 `index.html -> ./src/app.js`
+- 无必需构建步骤
+- 资源路径为静态相对路径，兼容 GitHub Pages 项目页部署

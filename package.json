@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "test": "node src/filters.test.mjs"
+    "test": "node src/filters.test.mjs && node src/app/business.test.mjs"
   },
   "dependencies": {
     "pdf-parse": "^2.4.5"
